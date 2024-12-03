@@ -2,7 +2,7 @@ const express = require("express");
 const userRouter = express.Router();
 const { userModel } = require("../db");
 const jwt = require("jsonwebtoken");
-JWT_SECRET = "secret"
+require('dotenv').config()
 
 
 userRouter.post("/signup", async (req, res) => {
@@ -31,7 +31,7 @@ userRouter.post("/signin", async (req, res) => {
 
     const user = await userModel.findOne({
         email: email
-    })
+    });
 
     if(user) {
 
@@ -39,7 +39,7 @@ userRouter.post("/signin", async (req, res) => {
 
             const token = jwt.sign({
                 id: user._id.toString()
-            },JWT_SECRET)
+            },process.env.JWT_SECRET);
 
             res.json({
                 token: token
@@ -48,13 +48,13 @@ userRouter.post("/signin", async (req, res) => {
         } else {
             res.status(401).json({
                 message: "Wrong Password"
-            })
+            });
         }
 
     } else {
         res.status(401).json({
             message: "No ID found with this email"
-        })
+        });
 
     }
 
