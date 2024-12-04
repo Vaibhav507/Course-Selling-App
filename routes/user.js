@@ -1,7 +1,8 @@
 const express = require("express");
 const userRouter = express.Router();
-const { userModel } = require("../db");
+const { userModel, purchaseModel } = require("../db");
 const jwt = require("jsonwebtoken");
+const { userMiddleware } = require("../middlewares/user");
 require('dotenv').config()
 
 
@@ -60,7 +61,16 @@ userRouter.post("/signin", async (req, res) => {
 
 })
 
-userRouter.get("/purchased", (req, res) => {
+userRouter.get("/purchased", userMiddleware, async (req, res) => {
+    const userId = req.userId;
+
+    const courses = await purchaseModel.find({
+        userId: userId
+    })
+
+    res.json({
+        courses
+    })
     
 })
 
