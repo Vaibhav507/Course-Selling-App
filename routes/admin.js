@@ -3,7 +3,8 @@ const adminRouter = express.Router();
 const jwt = require("jsonwebtoken");
 const { adminModel, courseModel, userModel } = require("../db");
 const { adminMiddleware } = require("../middlewares/admin");
-require('dotenv').config()
+require('dotenv').config();
+const bcrypt = require("bcrypt");
 
 
 adminRouter.post("/signup", async (req, res) => {
@@ -11,10 +12,12 @@ adminRouter.post("/signup", async (req, res) => {
     const password = req.body.password;
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
+
+    const hashedPassword = await bcrypt.hash(password, 5);
     
     await adminModel.create({
         email: email,
-        password: password,
+        password: hashedPassword,
         firstName: firstName,
         lastName: lastName
     })
@@ -33,30 +36,33 @@ adminRouter.post("/signin", async (req, res) => {
         email: email
     });
 
-    if(admin) {
-
-        if(admin.password === password) {
-
-            const token = jwt.sign({
-                id: admin._id.toString()
-            },process.env.JWT_SECRET2);
-
-            res.json({
-                token: token
-            });
-
-        } else {
-            res.status(401).json({
-                message: "Wrong Password"
-            });
-        }
-
-    } else {
+    if(!admin) {
         res.status(401).json({
             message: "No ID found with this email"
         });
-
+        return;
     }
+
+    const passwordMatched = await bcrypt.compare(password, admin.password);
+
+
+    if(passwordMatched) {
+
+        const token = jwt.sign({
+            id: admin._id.toString()
+        },process.env.JWT_SECRET2);
+
+        res.json({
+            token: token
+        });
+
+    } else {
+        res.status(401).json({
+            message: "Wrong Password"
+        });
+    }
+
+   
     
 
 })

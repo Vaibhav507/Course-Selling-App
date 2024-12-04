@@ -4,6 +4,7 @@ const { userModel, purchaseModel } = require("../db");
 const jwt = require("jsonwebtoken");
 const { userMiddleware } = require("../middlewares/user");
 require('dotenv').config()
+const bcrypt = require("bcrypt");
 
 
 userRouter.post("/signup", async (req, res) => {
@@ -11,10 +12,12 @@ userRouter.post("/signup", async (req, res) => {
     const password = req.body.password;
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
+
+    const hashedPassword = await bcrypt.hash(password, 5);
     
     await userModel.create({
         email: email,
-        password: password,
+        password: hashedPassword,
         firstName: firstName,
         lastName: lastName
     })
@@ -34,29 +37,29 @@ userRouter.post("/signin", async (req, res) => {
         email: email
     });
 
-    if(user) {
-
-        if(user.password === password) {
-
-            const token = jwt.sign({
-                id: user._id.toString()
-            },process.env.JWT_SECRET);
-
-            res.json({
-                token: token
-            });
-
-        } else {
-            res.status(401).json({
-                message: "Wrong Password"
-            });
-        }
-
-    } else {
+    if(!user) {
         res.status(401).json({
             message: "No ID found with this email"
         });
+        return;
+    }
 
+    const passwordMatched = await bcrypt.compare(password, user.password);
+
+    if(passwordMatched) {
+
+        const token = jwt.sign({
+            id: user._id.toString()
+        },process.env.JWT_SECRET);
+
+        res.json({
+            token: token
+        });
+
+    } else {
+        res.status(401).json({
+            message: "Wrong Password"
+        });
     }
 
 })
